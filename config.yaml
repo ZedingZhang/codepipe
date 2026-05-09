@@ -1,0 +1,29 @@
+# CodePipe Configuration
+# Switch providers by changing the "active" field to "deepseek" or "ollama"
+# Or override via environment variables: CODEPIPE_BASE_URL, CODEPIPE_API_KEY, CODEPIPE_MODEL
+
+active: deepseek  # deepseek | ollama
+
+providers:
+  deepseek:
+    base_url: "https://api.deepseek.com/v1"
+    api_key: "${DEEPSEEK_API_KEY}"       # reads from env var DEEPSEEK_API_KEY
+    model: "deepseek-chat"
+    description: "DeepSeek API (cloud, OpenAI-compatible)"
+
+  ollama:
+    base_url: "http://localhost:11434/v1"
+    api_key: "ollama"                     # Ollama doesn't require a real key
+    model: "qwen3:8b"
+    description: "Local Ollama (open-source models, OpenAI-compatible)"
+
+# Generation defaults
+generation:
+  temperature: 0.0
+  max_tokens: 2048
+  stream: false
+
+# Retry / safety
+safety:
+  max_retries: 3
+  fuzzy_match_threshold: 0.85
