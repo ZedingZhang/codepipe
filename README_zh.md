@@ -1,5 +1,7 @@
 # CodePipe
 
+[English](README.md) | 中文版
+
 **多语言、本地优先的确定性流水线 Coding Agent。**
 
 CodePipe 是一个基于 Agentless（ICSE 2025）理念构建的 CLI 编程代理：LLM 只做分类和生成，确定性代码做决策和验证。不同于 ReAct 循环代理（Claude Code、Cursor），CodePipe 采用固定的 5 专家流水线，专为本地小模型（8B–30B）优化设计。

@@ -1,5 +1,7 @@
 # CodePipe
 
+[中文版](README_zh.md) | English
+
 **Multi-language, local-first deterministic pipeline coding agent.**
 
 CodePipe is a CLI coding agent built on the Agentless (ICSE 2025) philosophy: LLMs handle classification and generation, deterministic code handles decision-making and verification. Unlike ReAct-loop agents (Claude Code, Cursor), CodePipe uses a fixed 5-expert pipeline optimized for local models (8B–30B).
@@ -100,6 +102,45 @@ codepipe/
 │   └── reflection.py          # REFLECTION.md persistence
 └── tests/                     # 179 tests across 7 phases
 ```
+
+## Design Philosophy — Seven Red Lines
+
+1. **No heavy frameworks** — No LangChain, LlamaIndex, or vector databases
+2. **No hardcoded Provider** — LLMClient accepts any base_url, api_key, model at runtime
+3. **No multi-agent routing** — No AutoGen, CrewAI; the model never decides the next step
+4. **Deterministic pipeline** — Input → Gate → Locator → Generator → Verifier → Output
+5. **TDD mandatory** — Tests written before implementation; 179 tests across all 7 phases
+6. **LLM only classifies and generates** — Flow control is 100% deterministic code
+7. **Data never leaves your machine** — Local models, local search, local storage
+
+## Phase Breakdown
+
+| Phase | Content | Tests |
+|-------|---------|-------|
+| Phase 1 | LLMClient multi-provider driver | 24 |
+| Phase 2 | Locator BM25 + AST context trimming | 25 |
+| Phase 3 | Generator SEARCH/REPLACE + difflib fuzzy matching | 38 |
+| Phase 4 | Verifier L1/L2 + Git state machine + anti-deadlock | 50 |
+| Phase 5 | Reflexion experience evolution (REFLECTION.md) | 18 |
+| Phase 6 | Top-K sampling + data flywheel + Docker sandbox | 10 |
+| Phase 7 | TDBR bug reproduction + call graph slicing | 14 |
+
+## Theory & References
+
+| Paper / Project | Venue | Use in CodePipe |
+|-----------------|-------|-----------------|
+| **Agentless** | Xia et al., ICSE 2025 | Deterministic pipeline over complex agents |
+| **CodeCompass** | arXiv:2602.20048, 2026 | AST call graph, G3 task accuracy 99.4% |
+| **Debug2Fix** | Microsoft, ICML 2026 | Weak model + debugger > strong model |
+| **LLMCompiler** | ICML 2024 | DAG task parallel scheduling |
+| **Reflexion** | NeurIPS 2023 | Failure pattern persistence |
+
+## Inspiration
+
+- **Claude Code** (Anthropic) — CLAUDE.md project rules, Checkpoint mechanism
+- **OpenHands V1** — Agent delegation, Context Condensation
+- **SearXNG** — Zero-API-key local search engine
+- **rank-bm25 / tree-sitter** — BM25+ algorithm, multi-language AST parsing
 
 ## License
 
