@@ -395,6 +395,32 @@ class Orchestrator:
             logger.debug("[orchestrator] reflexion load failed: %s", e)
         return ""
 
+    @staticmethod
+    def _format_locator_context(locator_context: dict) -> str:
+        """Format locator output into a concise prompt snippet for Generator."""
+        if not locator_context:
+            return ""
+
+        parts = ["## 代码定位结果"]
+
+        files = locator_context.get("files", [])
+        if files:
+            parts.append(f"相关文件: {', '.join(files[:5])}")
+
+        edit_locs = locator_context.get("edit_locations", [])
+        if edit_locs:
+            parts.append(f"编辑位置: {', '.join(edit_locs[:5])}")
+
+        context = locator_context.get("context", {})
+        for fname, entries in context.items():
+            for entry in entries[:3]:
+                name = entry.get("name", "")
+                body = entry.get("body", "")
+                if body:
+                    parts.append(f"\n### {fname}::{name}\n```\n{body[:500]}\n```")
+
+        return "\n".join(parts) if len(parts) > 1 else ""
+
     def _save_reflection_from_success(
         self, user_request: str, target_file: str,
         last_error: str, success_patch: str,
@@ -481,6 +507,11 @@ class Orchestrator:
                 # Prepend reflexion few-shot if available
                 if reflection_injection:
                     prompt = reflection_injection + "\n\n" + prompt
+                # Inject locator context for better code generation
+                if locator_context:
+                    context_str = self._format_locator_context(locator_context)
+                    if context_str:
+                        prompt = context_str + "\n\n" + prompt
             else:
                 # Retry — inject anti-deadlock warning + reflection
                 deadlock_msg = self._deadlock_tracker.build_injection()
