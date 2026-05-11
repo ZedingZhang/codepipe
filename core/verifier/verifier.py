@@ -154,40 +154,17 @@ class L2TestRunner:
             logger.debug("L2: pytest not available")
             return L2Result(passed=True, tests_passed=0, tests_total=0)
 
-        # Run pytest
-        env = os.environ.copy()
-        # Add project_root to PYTHONPATH so test imports work
-        existing_pythonpath = env.get("PYTHONPATH", "")
-        if existing_pythonpath:
-            env["PYTHONPATH"] = f"{root}{os.pathsep}{existing_pythonpath}"
-        else:
-            env["PYTHONPATH"] = str(root)
+        # Run pytest — prefer Docker sandbox, fall back to local
+        pytest_cmd = f"{sys.executable} -m pytest tests/ --tb=short -q"
+        stdout, stderr, rc = self._run_in_sandbox(root, pytest_cmd)
 
-        try:
-            proc = subprocess.run(
-                [sys.executable, "-m", "pytest", "tests/", "--tb=short", "-q"],
-                cwd=root,
-                capture_output=True,
-                timeout=self.TIMEOUT,
-                text=True,
-                env=env,
-            )
-        except subprocess.TimeoutExpired:
-            return L2Result(
-                passed=False,
-                error_type="TEST_FAILURE",
-                error_detail="pytest timed out after 60s",
-            )
-
-        combined = proc.stdout + "\n" + proc.stderr
+        combined = stdout + "\n" + stderr
         passed, total = self._parse_counts(combined)
 
-        if proc.returncode == 0:
+        if rc == 0:
             return L2Result(passed=True, tests_passed=passed, tests_total=total)
 
-        # Failure — classify
         error_type, error_detail = classify_error(combined)
-
         return L2Result(
             passed=False,
             tests_passed=passed,
@@ -195,6 +172,32 @@ class L2TestRunner:
             error_type=error_type,
             error_detail=error_detail,
         )
+
+    @staticmethod
+    def _run_in_sandbox(root, command: str) -> tuple:
+        """Run command in Docker sandbox if available, otherwise locally."""
+        try:
+            from core.docker_sandbox import DockerSandbox
+            sandbox = DockerSandbox()
+            if sandbox.is_available():
+                logger.info("[L2] Running in Docker sandbox")
+                return sandbox.run_command(command=command, workspace=str(root))
+        except Exception as e:
+            logger.debug("[L2] Docker sandbox unavailable: %s", e)
+
+        # Local fallback
+        env = os.environ.copy()
+        existing = env.get("PYTHONPATH", "")
+        env["PYTHONPATH"] = f"{root}{os.pathsep}{existing}" if existing else str(root)
+        try:
+            proc = subprocess.run(
+                command.split(),
+                cwd=root, capture_output=True, text=True, timeout=120,
+                env=env,
+            )
+            return proc.stdout, proc.stderr, proc.returncode
+        except subprocess.TimeoutExpired:
+            return "", "pytest timed out after 120s", -1
 
     @staticmethod
     def _parse_counts(output: str) -> tuple[int, int]:
