@@ -18,6 +18,7 @@ from typing import Optional
 
 from core.locator.bm25_scorer import BM25FileScorer, _tokenize
 from core.locator.ast_extractor import ASTExtractor, FunctionInfo
+from core.locator.call_slicer import CallSlicer
 
 logger = logging.getLogger(__name__)
 
@@ -154,11 +155,58 @@ class Locator:
             "Locator: trimmed context — %d functions across %d files",
             total_funcs, len(context),
         )
+
+        # ── Stage 3: Call graph slicing for top function ──
+        slices = self._enrich_slices(project_root, context, files)
+
         return {
             "files": files[:5],
             "context": context,
             "edit_locations": edit_locations,
+            "slices": slices,
         }
+
+    # ── Call Graph Enrichment ────────────────────────────────
+
+    @staticmethod
+    def _enrich_slices(
+        project_root: str,
+        context: dict[str, list[dict]],
+        files: list[str],
+    ) -> dict:
+        """
+        For the top-ranked function, run CallSlicer to extract:
+          - upstream (Def-Use): imports, globals, called function signatures
+          - downstream (Callers): other files that call this function
+        """
+        slicer = CallSlicer()
+        slices: dict = {}
+
+        for fpath in files:
+            entries = context.get(fpath, [])
+            if not entries:
+                continue
+            top_func = entries[0]["name"]
+            try:
+                result = slicer.slice_context(project_root, top_func, fpath)
+                upstream = result.get("upstream", {})
+                downstream = result.get("downstream", [])
+
+                if upstream.get("functions") or downstream:
+                    slices[f"{fpath}::{top_func}"] = {
+                        "upstream": upstream,
+                        "downstream": downstream,
+                    }
+                    logger.info(
+                        "[locator] CallSlicer enriched %s: %d upstream, %d downstream callers",
+                        top_func,
+                        len(upstream.get("functions", {})),
+                        len(downstream),
+                    )
+            except Exception as e:
+                logger.debug("[locator] CallSlicer failed for %s: %s", top_func, e)
+
+        return slices
 
     # ── Keyword helpers ──────────────────────────────────────
 
