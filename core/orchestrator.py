@@ -421,6 +421,23 @@ class Orchestrator:
 
         return "\n".join(parts) if len(parts) > 1 else ""
 
+    def _record_flywheel(self, instruction, context, output, retry_count, target_file):
+        """Record successful task to dataset.jsonl (non-blocking)."""
+        try:
+            from core.data_flywheel import FlywheelCollector
+            collector = FlywheelCollector()
+            collector.record(
+                instruction=instruction,
+                context=context,
+                output=output,
+                success=True,
+                retry_count=retry_count,
+                model=getattr(self.llm_client, 'model', '') if self.llm_client else '',
+                target_file=target_file,
+            )
+        except Exception as e:
+            logger.debug("[orchestrator] flywheel record failed: %s", e)
+
     def _save_reflection_from_success(
         self, user_request: str, target_file: str,
         last_error: str, success_patch: str,
@@ -581,6 +598,15 @@ class Orchestrator:
                         user_request, target_file,
                         last_error, response[:1000],
                     )
+
+                # ── Flywheel: record training data ──
+                self._record_flywheel(
+                    instruction=user_request,
+                    context=locator_context or {},
+                    output=response[:2000],
+                    retry_count=self._retry_state.attempt,
+                    target_file=target_file,
+                )
 
                 self._deadlock_tracker.reset()
                 self._retry_state.reset()
