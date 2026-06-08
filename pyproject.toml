@@ -38,7 +38,7 @@ dev = ["pytest>=7.0.0", "pytest-asyncio>=0.23.0"]
 codepipe = "cli:app"
 
 [project.urls]
-Repository = "https://github.com/user/codepipe"
+Repository = "https://github.com/ZedingZhang/codepipe"
 
 [tool.setuptools.packages.find]
 where = ["."]
