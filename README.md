@@ -4,6 +4,8 @@
 
 **Multi-language, local-first deterministic pipeline coding agent.**
 
+> Alpha release: `v0.1.0-alpha` / Python package version `0.1.0a1`.
+
 CodePipe is a CLI coding agent built on the Agentless (ICSE 2025) philosophy: LLMs handle classification and generation, deterministic code handles decision-making and verification. Unlike ReAct-loop agents (Claude Code, Cursor), CodePipe uses a fixed 5-expert pipeline optimized for local models (8B–30B).
 
 ## Why CodePipe?
@@ -44,18 +46,43 @@ User Input → Gate → Locator → Generator → Verifier → Output
 
 ## Quick Start
 
+### Install from GitHub
+
+```bash
+pipx install "git+https://github.com/ZedingZhang/codepipe.git@v0.1.0-alpha"
+codepipe init-config
+```
+
+Then choose a provider:
+
+```bash
+# DeepSeek / OpenAI-compatible cloud endpoint
+export DEEPSEEK_API_KEY="your_api_key"
+
+# Or edit config.yaml and set:
+# active: ollama
+```
+
+```bash
+codepipe providers
+codepipe chat "Hello"
+codepipe repl --project /path/to/your/project
+```
+
+### Develop from source
+
 ```bash
 pip install -e ".[dev]"
 cp config.yaml.example config.yaml  # edit your API keys
-pytest tests/ -q                    # 179 tests should pass
+pytest tests/ -q
 ```
 
 ```bash
 # Chat with configured LLM
-python cli.py chat "Hello"
+codepipe chat "Hello"
 
 # List providers
-python cli.py providers
+codepipe providers
 ```
 
 ## Config
@@ -82,7 +109,7 @@ Or via environment: `CODEPIPE_BASE_URL`, `CODEPIPE_API_KEY`, `CODEPIPE_MODEL`.
 ```
 codepipe/
 ├── cli.py                     # Typer entry point
-├── config.yaml                # Multi-provider config
+├── config.yaml.example        # Multi-provider config template
 ├── core/
 │   ├── llm_client.py          # Unified LLM driver
 │   ├── orchestrator.py        # Pipeline + Git state machine
@@ -100,7 +127,7 @@ codepipe/
 │       └── verifier.py        # L1 syntax + L2 test verification
 ├── memory/
 │   └── reflection.py          # REFLECTION.md persistence
-└── tests/                     # 179 tests across 7 phases
+└── tests/                     # pytest suite across 7 phases
 ```
 
 ## Design Philosophy — Seven Red Lines
@@ -109,7 +136,7 @@ codepipe/
 2. **No hardcoded Provider** — LLMClient accepts any base_url, api_key, model at runtime
 3. **No multi-agent routing** — No AutoGen, CrewAI; the model never decides the next step
 4. **Deterministic pipeline** — Input → Gate → Locator → Generator → Verifier → Output
-5. **TDD mandatory** — Tests written before implementation; 179 tests across all 7 phases
+5. **TDD mandatory** — Tests written before implementation across all 7 phases
 6. **LLM only classifies and generates** — Flow control is 100% deterministic code
 7. **Data never leaves your machine** — Local models, local search, local storage
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "codepipe"
-version = "0.1.0"
+version = "0.1.0a1"
 description = "Multi-language, local-first deterministic pipeline coding agent"
 requires-python = ">=3.9"
 readme = "README.md"
@@ -38,7 +38,12 @@ dev = ["pytest>=7.0.0", "pytest-asyncio>=0.23.0"]
 codepipe = "cli:app"
 
 [project.urls]
+Homepage = "https://github.com/ZedingZhang/codepipe"
 Repository = "https://github.com/ZedingZhang/codepipe"
+Issues = "https://github.com/ZedingZhang/codepipe/issues"
+
+[tool.setuptools]
+py-modules = ["cli"]
 
 [tool.setuptools.packages.find]
 where = ["."]
