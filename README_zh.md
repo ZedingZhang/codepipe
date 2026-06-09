@@ -40,7 +40,7 @@ ReAct 循环代理需要强推理模型来决策"下一步调用什么工具"。
 - **Reflexion 经验进化** — 失败→成功模式持久化到 REFLECTION.md，下次任务作为 Few-shot 注入
 - **Top-K 并发采样** — asyncio 并发生成 K 个候选补丁，首个通过即胜出
 - **数据飞轮** — 收集 (instruction, context, output) 三元组到 dataset.jsonl，为 LoRA 微调储备数据
-- **Docker 沙盒** — 容器隔离的 L2 测试执行，工作区只读挂载，宿主机安全
+- **Docker 沙盒** — 可选的容器隔离 L2 测试执行，工作区只读挂载，宿主机安全（`CODEPIPE_DOCKER_SANDBOX=1`）
 - **TDBR 测试复现** — 先写失败测试复现 Bug，再修复代码让测试变绿
 - **调用图语义切片** — 基于 AST 的上游（Def-Use）+ 下游（Callers）依赖上下文提取
 

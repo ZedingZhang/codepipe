@@ -144,18 +144,22 @@ class L2TestRunner:
             logger.debug("L2: no tests/ directory, skipping")
             return L2Result(passed=True, tests_passed=0, tests_total=0)
 
-        # Check if pytest is available
+        # Check if pytest is available in the current runtime.
         try:
-            subprocess.run(
+            pytest_check = subprocess.run(
                 [sys.executable, "-m", "pytest", "--version"],
                 capture_output=True, timeout=5,
             )
         except (subprocess.TimeoutExpired, FileNotFoundError):
             logger.debug("L2: pytest not available")
             return L2Result(passed=True, tests_passed=0, tests_total=0)
+        if pytest_check.returncode != 0:
+            logger.debug("L2: pytest not available")
+            return L2Result(passed=True, tests_passed=0, tests_total=0)
 
-        # Run pytest — prefer Docker sandbox, fall back to local
-        pytest_cmd = f"{sys.executable} -m pytest tests/ --tb=short -q"
+        # Run pytest locally by default. Docker sandbox is opt-in because a
+        # generic python image will not contain every project's test dependencies.
+        pytest_cmd = [sys.executable, "-m", "pytest", "tests/", "--tb=short", "-q"]
         stdout, stderr, rc = self._run_in_sandbox(root, pytest_cmd)
 
         combined = stdout + "\n" + stderr
@@ -174,16 +178,23 @@ class L2TestRunner:
         )
 
     @staticmethod
-    def _run_in_sandbox(root, command: str) -> tuple:
-        """Run command in Docker sandbox if available, otherwise locally."""
-        try:
-            from core.docker_sandbox import DockerSandbox
-            sandbox = DockerSandbox()
-            if sandbox.is_available():
-                logger.info("[L2] Running in Docker sandbox")
-                return sandbox.run_command(command=command, workspace=str(root))
-        except Exception as e:
-            logger.debug("[L2] Docker sandbox unavailable: %s", e)
+    def _run_in_sandbox(root, command: list[str]) -> tuple:
+        """Run tests locally, or in Docker when explicitly enabled."""
+        use_docker = os.environ.get("CODEPIPE_DOCKER_SANDBOX", "").lower() in {
+            "1", "true", "yes",
+        }
+        if use_docker:
+            try:
+                from core.docker_sandbox import DockerSandbox
+                sandbox = DockerSandbox()
+                if sandbox.is_available():
+                    logger.info("[L2] Running in Docker sandbox")
+                    return sandbox.run_command(
+                        command="python -m pytest tests/ --tb=short -q",
+                        workspace=str(root),
+                    )
+            except Exception as e:
+                logger.debug("[L2] Docker sandbox unavailable: %s", e)
 
         # Local fallback
         env = os.environ.copy()
@@ -191,7 +202,7 @@ class L2TestRunner:
         env["PYTHONPATH"] = f"{root}{os.pathsep}{existing}" if existing else str(root)
         try:
             proc = subprocess.run(
-                command.split(),
+                command,
                 cwd=root, capture_output=True, text=True, timeout=120,
                 env=env,
             )

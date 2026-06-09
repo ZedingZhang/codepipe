@@ -40,7 +40,7 @@ User Input → Gate → Locator → Generator → Verifier → Output
 - **Reflexion** — Persists failure→success patterns to REFLECTION.md, injects as few-shot on future tasks
 - **Top-K Sampling** — Concurrent multi-candidate generation with first-pass-wins voting
 - **Data Flywheel** — Collects (instruction, context, output) triples to dataset.jsonl for future LoRA fine-tuning
-- **Docker Sandbox** — Container-isolated L2 test execution with read-only workspace mount
+- **Docker Sandbox** — Optional container-isolated L2 test execution with read-only workspace mount (`CODEPIPE_DOCKER_SANDBOX=1`)
 - **TDBR Pipeline** — Test-Driven Bug Reproduction: write failing test first, then fix
 - **Call Graph Slicing** — AST-based upstream (Def-Use) + downstream (Callers) context extraction
 
