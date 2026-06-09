@@ -6,6 +6,7 @@ Commands:
     repl        Interactive REPL loop with /commands
     chat        Single prompt to LLM
     providers   List configured LLM providers
+    init-config Write a starter config.yaml
 """
 
 import os
@@ -13,6 +14,34 @@ import sys
 from pathlib import Path
 
 import typer
+
+DEFAULT_CONFIG = """# CodePipe configuration.
+# API keys are read from environment variables by default.
+
+active: deepseek  # deepseek | ollama
+
+providers:
+  deepseek:
+    base_url: "https://api.deepseek.com/v1"
+    api_key: "${DEEPSEEK_API_KEY}"
+    model: "deepseek-chat"
+    description: "DeepSeek API (cloud, OpenAI-compatible)"
+
+  ollama:
+    base_url: "http://localhost:11434/v1"
+    api_key: "ollama"
+    model: "qwen3:8b"
+    description: "Local Ollama (open-source models, OpenAI-compatible)"
+
+generation:
+  temperature: 0.0
+  max_tokens: 2048
+  stream: false
+
+safety:
+  max_retries: 3
+  fuzzy_match_threshold: 0.85
+"""
 
 app = typer.Typer(
     name="codepipe",
@@ -84,6 +113,11 @@ def _show_result(result: dict, verbose: bool = False):
             typer.echo("  [ROLLBACK] git reset --hard")
 
 
+def _config_missing_error(path: str = "config.yaml") -> None:
+    typer.echo(f"[ERROR] {path} not found", err=True)
+    typer.echo("Run `codepipe init-config` in your project, then edit config.yaml.", err=True)
+
+
 # ── Commands ─────────────────────────────────────────────────
 
 
@@ -101,7 +135,7 @@ def run(
     try:
         client = LLMClient.from_config()
     except FileNotFoundError:
-        typer.echo("[ERROR] config.yaml not found", err=True)
+        _config_missing_error()
         raise typer.Exit(code=1)
 
     typer.echo(f"provider={client.config.provider_name} model={client.model} project={project_root}")
@@ -124,7 +158,7 @@ def repl(
     try:
         client = LLMClient.from_config()
     except FileNotFoundError:
-        typer.echo("[ERROR] config.yaml not found", err=True)
+        _config_missing_error()
         raise typer.Exit(code=1)
 
     typer.echo(f"CodePipe REPL — provider={client.config.provider_name} model={client.model}")
@@ -252,8 +286,8 @@ def chat(prompt: str = typer.Argument(..., help="Message to send to the LLM")):
 
     try:
         client = LLMClient.from_config()
-    except FileNotFoundError as e:
-        typer.echo(f"[ERROR] {e}", err=True)
+    except FileNotFoundError:
+        _config_missing_error()
         raise typer.Exit(code=1)
     except Exception as e:
         typer.echo(f"[ERROR] Config error: {e}", err=True)
@@ -276,7 +310,7 @@ def providers():
 
     config_path = Path("config.yaml")
     if not config_path.exists():
-        typer.echo("[ERROR] config.yaml not found", err=True)
+        _config_missing_error()
         raise typer.Exit(code=1)
 
     with open(config_path) as f:
@@ -290,6 +324,22 @@ def providers():
     for name, cfg in providers_data.items():
         marker = " (active)" if name == active else ""
         typer.echo(f"  {name}: {cfg.get('model', '?')} @ {cfg.get('base_url', '?')}{marker}")
+
+
+@app.command("init-config")
+def init_config(
+    path: str = typer.Option("config.yaml", "--path", "-p", help="Config file path to write"),
+    force: bool = typer.Option(False, "--force", "-f", help="Overwrite an existing config file"),
+):
+    """Write a starter config.yaml for the current project."""
+    config_path = Path(path)
+    if config_path.exists() and not force:
+        typer.echo(f"[ERROR] {config_path} already exists. Use --force to overwrite.", err=True)
+        raise typer.Exit(code=1)
+
+    config_path.write_text(DEFAULT_CONFIG, encoding="utf-8")
+    typer.echo(f"Wrote {config_path}")
+    typer.echo("Set DEEPSEEK_API_KEY or switch active provider to ollama before running CodePipe.")
 
 
 if __name__ == "__main__":

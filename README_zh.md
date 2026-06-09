@@ -4,6 +4,8 @@
 
 **多语言、本地优先的确定性流水线 Coding Agent。**
 
+> Alpha 发行版：`v0.1.0-alpha` / Python 包版本 `0.1.0a1`。
+
 CodePipe 是一个基于 Agentless（ICSE 2025）理念构建的 CLI 编程代理：LLM 只做分类和生成，确定性代码做决策和验证。不同于 ReAct 循环代理（Claude Code、Cursor），CodePipe 采用固定的 5 专家流水线，专为本地小模型（8B–30B）优化设计。
 
 ## 为什么做 CodePipe？
@@ -44,18 +46,43 @@ ReAct 循环代理需要强推理模型来决策"下一步调用什么工具"。
 
 ## 快速开始
 
+### 从 GitHub 安装
+
+```bash
+pipx install "git+https://github.com/ZedingZhang/codepipe.git@v0.1.0-alpha"
+codepipe init-config
+```
+
+然后选择模型驱动：
+
+```bash
+# DeepSeek / OpenAI 兼容云端接口
+export DEEPSEEK_API_KEY="your_api_key"
+
+# 或编辑 config.yaml，改成：
+# active: ollama
+```
+
+```bash
+codepipe providers
+codepipe chat "你好"
+codepipe repl --project /path/to/your/project
+```
+
+### 从源码开发
+
 ```bash
 pip install -e ".[dev]"
-# 编辑 config.yaml 配置 API key
-pytest tests/ -q                    # 179 个测试应全部通过
+cp config.yaml.example config.yaml  # 编辑 API key
+pytest tests/ -q
 ```
 
 ```bash
 # 与配置的 LLM 对话
-python cli.py chat "你好"
+codepipe chat "你好"
 
 # 列出可用驱动
-python cli.py providers
+codepipe providers
 ```
 
 ## 配置
@@ -83,7 +110,7 @@ providers:
 2. **禁止硬编码 Provider** — LLMClient 抽象层，构造参数接收任意 base_url
 3. **禁止多 Agent 自由路由** — 不用 AutoGen、CrewAI，不允模型自我决定下一步
 4. **确定性流水线** — Input → Gate → Locator → Generator → Verifier → Output
-5. **TDD 强制** — 所有核心逻辑先写 pytest 测试，179 测试覆盖全部 7 个阶段
+5. **TDD 强制** — 核心逻辑先写 pytest 测试，覆盖全部 7 个阶段
 6. **LLM 只做分类和生成** — 流程控制 100% 确定性代码
 7. **数据不出网** — 全部本地运行，模型跑本地，搜索可选自部署 SearXNG
 
@@ -92,7 +119,7 @@ providers:
 ```
 codepipe/
 ├── cli.py                     # Typer 入口
-├── config.yaml                # 多驱动配置
+├── config.yaml.example        # 多驱动配置模板
 ├── core/
 │   ├── llm_client.py          # 统一 LLM 驱动
 │   ├── orchestrator.py        # 流水线编排 + Git 状态机
@@ -110,7 +137,7 @@ codepipe/
 │       └── verifier.py        # L1 语法 + L2 测试验证
 ├── memory/
 │   └── reflection.py          # REFLECTION.md 持久化
-└── tests/                     # 179 个测试，覆盖 7 个阶段
+└── tests/                     # 覆盖 7 个阶段的 pytest 测试
 ```
 
 ## 各阶段详情
