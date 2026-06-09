@@ -11,7 +11,7 @@ Initial alpha release for early testers.
 - BM25 + AST based repository locator
 - SEARCH/REPLACE patch generator with fuzzy matching
 - Syntax and pytest-based verification
-- Reflexion memory, Top-K sampling, Docker sandbox, and TDBR utilities
+- Reflexion memory, Top-K sampling, opt-in Docker sandbox, and TDBR utilities
 - `codepipe` CLI entry point with `run`, `repl`, `chat`, `providers`, and `init-config`
 
 ### Notes
