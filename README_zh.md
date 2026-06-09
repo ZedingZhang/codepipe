@@ -121,6 +121,7 @@ codepipe/
 ├── cli.py                     # Typer 入口
 ├── config.yaml.example        # 多驱动配置模板
 ├── core/
+│   ├── gate.py                # LLM 任务分类器（7 种类型）
 │   ├── llm_client.py          # 统一 LLM 驱动
 │   ├── orchestrator.py        # 流水线编排 + Git 状态机
 │   ├── generator.py           # SEARCH/REPLACE + 模糊匹配
@@ -144,7 +145,7 @@ codepipe/
 
 | 阶段 | 内容 | 测试数 |
 |------|------|--------|
-| Phase 1 | LLMClient 多驱动统一层 | 24 |
+| Phase 1 | LLMClient 多驱动统一层 + Gate 分类器 | 45 |
 | Phase 2 | Locator BM25 + AST 上下文裁剪 | 25 |
 | Phase 3 | Generator SEARCH/REPLACE + difflib 模糊匹配 | 38 |
 | Phase 4 | Verifier L1/L2 + Git 状态机 + 防死锁重试 | 50 |

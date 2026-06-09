@@ -112,6 +112,7 @@ codepipe/
 ├── config.yaml.example        # Multi-provider config template
 ├── core/
 │   ├── llm_client.py          # Unified LLM driver
+│   ├── gate.py                # LLM task classifier (7 types)
 │   ├── orchestrator.py        # Pipeline + Git state machine
 │   ├── generator.py           # SEARCH/REPLACE + fuzzy matching
 │   ├── topk_sampler.py        # Concurrent K-candidate generation
@@ -144,7 +145,7 @@ codepipe/
 
 | Phase | Content | Tests |
 |-------|---------|-------|
-| Phase 1 | LLMClient multi-provider driver | 24 |
+| Phase 1 | LLMClient multi-provider driver + Gate classifier | 45 |
 | Phase 2 | Locator BM25 + AST context trimming | 25 |
 | Phase 3 | Generator SEARCH/REPLACE + difflib fuzzy matching | 38 |
 | Phase 4 | Verifier L1/L2 + Git state machine + anti-deadlock | 50 |
