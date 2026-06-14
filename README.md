@@ -119,6 +119,10 @@ codepipe chat "Hello"
 codepipe providers
 ```
 
+## Runtime Screenshot
+
+![CodePipe CLI running in a terminal](assets/codepipe-running.png)
+
 ## Config
 
 ```yaml

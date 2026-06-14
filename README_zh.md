@@ -117,6 +117,10 @@ codepipe chat "你好"
 codepipe providers
 ```
 
+## 运行截图
+
+![CodePipe CLI 在终端中运行](assets/codepipe-running.png)
+
 ## 配置
 
 ```yaml
