@@ -14,11 +14,43 @@ ReAct 循环代理需要强推理模型来决策"下一步调用什么工具"。
 
 ## 架构
 
+```mermaid
+flowchart LR
+    user["用户输入"] --> cli["CLI<br/>run / repl / chat"]
+    cli --> gate["Gate<br/>任务分类"]
+
+    config["config.yaml<br/>模型驱动配置"] --> llm["LLMClient<br/>OpenAI 兼容接口"]
+    llm --> gate
+    llm --> generator
+
+    gate -->|"bugfix / refactor / doc / testgen"| locator["Locator<br/>BM25 文件召回"]
+    locator --> ast["AST Extractor<br/>函数/类上下文"]
+    ast --> slicer["CallSlicer<br/>上游 + 下游依赖"]
+    slicer --> generator["Generator<br/>CREATE 或 EDIT 模式"]
+
+    gate -->|"codegen"| generator
+    gate -->|"chat"| chat["直接聊天响应"]
+
+    generator --> patch["Patch Engine<br/>SEARCH/REPLACE + 模糊匹配"]
+    patch --> verifier["Verifier<br/>L1 语法 + L2 pytest"]
+    verifier -->|"通过"| output["输出<br/>修改后的文件"]
+    verifier -->|"可重试失败"| retry["RetryState<br/>防死锁提示"]
+    retry --> generator
+
+    git["GitGuard<br/>快照 + 回滚"] --> patch
+    verifier -->|"超过重试或依赖缺失"| git
+
+    reflection["REFLECTION.md<br/>失败到成功经验"] --> generator
+    verifier -->|"重试后成功"| reflection
+
+    flywheel["memory/dataset.jsonl<br/>训练数据"] <-->|"成功"| verifier
+    sandbox["Docker Sandbox<br/>可选测试隔离"] -.-> verifier
+    topk["Top-K Sampler<br/>可选候选补丁"] -.-> generator
+
+    chat --> output
 ```
-用户输入 → Gate → Locator → Generator → Verifier → 输出
-              ↑         ↑          ↑          ↑
-          LLM 调用   BM25+AST   LLM 调用   ast+pytest
-```
+
+主链路是确定性的：`Gate → Locator → Generator → Verifier`。LLM 只负责任务分类和补丁生成；搜索、补丁应用、验证、重试控制、回滚、记忆与数据收集都由本地代码完成。
 
 | 专家 | 职责 | 调 LLM？ |
 |------|------|----------|

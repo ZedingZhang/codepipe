@@ -14,11 +14,43 @@ ReAct-loop agents require strong reasoning models to decide which tool to call n
 
 ## Architecture
 
+```mermaid
+flowchart LR
+    user["User Input"] --> cli["CLI<br/>run / repl / chat"]
+    cli --> gate["Gate<br/>task classification"]
+
+    config["config.yaml<br/>provider settings"] --> llm["LLMClient<br/>OpenAI-compatible API"]
+    llm --> gate
+    llm --> generator
+
+    gate -->|"bugfix / refactor / doc / testgen"| locator["Locator<br/>BM25 recall"]
+    locator --> ast["AST Extractor<br/>function/class context"]
+    ast --> slicer["CallSlicer<br/>upstream + downstream"]
+    slicer --> generator["Generator<br/>CREATE or EDIT mode"]
+
+    gate -->|"codegen"| generator
+    gate -->|"chat"| chat["Direct Chat Response"]
+
+    generator --> patch["Patch Engine<br/>SEARCH/REPLACE + fuzzy match"]
+    patch --> verifier["Verifier<br/>L1 syntax + L2 pytest"]
+    verifier -->|"pass"| output["Output<br/>modified files"]
+    verifier -->|"retryable failure"| retry["RetryState<br/>anti-deadlock prompt"]
+    retry --> generator
+
+    git["GitGuard<br/>snapshot + rollback"] --> patch
+    verifier -->|"max retries or import error"| git
+
+    reflection["REFLECTION.md<br/>failure to success memory"] --> generator
+    verifier -->|"success after retry"| reflection
+
+    flywheel["memory/dataset.jsonl<br/>training data"] <-->|"success"| verifier
+    sandbox["Docker Sandbox<br/>optional test isolation"] -.-> verifier
+    topk["Top-K Sampler<br/>optional candidates"] -.-> generator
+
+    chat --> output
 ```
-User Input → Gate → Locator → Generator → Verifier → Output
-               ↑         ↑          ↑          ↑
-           LLM call   BM25+AST   LLM call   ast+pytest
-```
+
+The main path is deterministic: `Gate → Locator → Generator → Verifier`. LLM calls are confined to task classification and patch generation; search, patch application, verification, retry control, rollback, and memory are handled by local code.
 
 | Expert | Role | LLM? |
 |--------|------|------|
