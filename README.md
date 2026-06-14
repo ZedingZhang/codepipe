@@ -10,6 +10,18 @@
 
 CodePipe is a CLI coding agent built on the Agentless (ICSE 2025) philosophy: LLMs handle classification and generation, deterministic code handles decision-making and verification. Unlike ReAct-loop agents (Claude Code, Cursor), CodePipe uses a fixed 5-expert pipeline optimized for local models (8B–30B).
 
+## 30-second verification
+
+Run the unit suite and confirm the CLI entrypoint loads:
+
+```bash
+git clone https://github.com/ZedingZhang/codepipe.git
+cd codepipe
+python -m pip install -e ".[dev]"
+python -m pytest -q
+codepipe --help
+```
+
 ## Why CodePipe?
 
 ReAct-loop agents require strong reasoning models to decide which tool to call next. Local 8B models get stuck in infinite loops, hallucinate tool calls, and repeat the same mistakes. CodePipe replaces the decision loop with a deterministic pipeline — the LLM only appears twice: once to classify the task, once to generate the patch.
