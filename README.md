@@ -1,5 +1,7 @@
 # CodePipe
 
+[![CI](https://github.com/ZedingZhang/codepipe/actions/workflows/ci.yml/badge.svg)](https://github.com/ZedingZhang/codepipe/actions/workflows/ci.yml)
+
 [中文版](README_zh.md) | English
 
 **Multi-language, local-first deterministic pipeline coding agent.**
